@@ -1,12 +1,13 @@
 export default class CtrlAdmin{
 
     /**
-    * authenticating a admin
+    * authenticating admin
     * @param email
     * @param password
     */
     static async auth(email: string, password: string): Promise<Object> {
 
+        //initializing static admin details
         let admin = {
             email: "admin@abc.com",
             password: "123456"

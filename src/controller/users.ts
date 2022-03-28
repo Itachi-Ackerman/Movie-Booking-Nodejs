@@ -11,13 +11,15 @@
       * creating a new user
       * @param body
       */
-     static async create(body: any): Promise<IUser> {
+     static async create(body: any){
+         //generating hashed password
          const hash = await Bcrypt.hashing(body.password);
          const data = {
              ...body,
              password: hash,
          };
-         return users.create(data);
+         await users.create(data);
+         return { success: true, message: "user created successfully" };
      }
  
      /**
@@ -25,7 +27,7 @@
       * @param email
       * @param password
       */
-     static async auth(email: string, password: string): Promise<IUser> {
+     static async auth(email: string, password: string) {
          // fetch user from database
          const user = await users.findOne({ email }).lean();
  
@@ -50,6 +52,7 @@
       * @param limit - no of documents to be returned per page
       */
      static async findAll(page: number, limit: number): Promise<IUser[]>{
+        //skipping and limiting before showing entire users list
         return users
             .aggregate([
                 {
@@ -57,6 +60,12 @@
                 },
                 {
                     $limit: limit,
+                },
+                {
+                    $project: {
+                        "password":0,
+                        "__v": 0
+                    }
                 }
 
             ])
@@ -71,21 +80,27 @@
         return users
             .aggregate([
                 {
+                    //matching userID with userId from users collection
                     $match: {
                         _id: new mongoose.Types.ObjectId(userId)
                     },
                 },
                 {
+                    //ignoring password before displaying
                     $project:{
-                        "password" : 0
+                        "password" : 0,
+                        "__v":0
                     }  
                 },
                 {
+                    //looking up from ticket collection with id as reference
                     $lookup: {
                         from: "tickets",
                         let: { userId: "$_id"},
                         pipeline: [
                             {
+                                //matching userId from users with user Id in tickets collection and then 
+                                //checking for valid showTime
                                 $match: 
                                 { 
                                     $expr: 
@@ -104,11 +119,26 @@
                                     }
                                 }
                             },
+                            //ignoring unnecessary fields before displaying
+                            {
+                                $project: {
+                                    "user": 0,
+                                    "__v":0
+                                }
+                            },
+                            //looking up from movies and cinemas colection with id references 
                             {
                                 $lookup: {
                                     from: "movies",
                                     localField: "movie",
                                     foreignField: "_id",
+                                    pipeline: [
+                                        {
+                                            $project: {
+                                                "__v":0
+                                            } 
+                                        }
+                                    ],
                                     as: "movie"
                                 }
                             },
@@ -117,23 +147,15 @@
                                     from: "cinemas",
                                     localField: "cinema",
                                     foreignField: "_id",
-                                    as: "cinema"
-                                }
-                            },
-                            {
-                                $lookup: {
-                                    from: "users",
-                                    localField: "user",
-                                    foreignField: "_id",
                                     pipeline: [
                                         {
                                             $project: {
-                                                "password": 0
+                                                "__v":0
                                             } 
                                         }
                                     ],
-                                    as: "user"
-                                },
+                                    as: "cinema"
+                                }
                             },
                         ],
                         as: "tickets"

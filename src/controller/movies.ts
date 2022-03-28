@@ -9,8 +9,14 @@ export default class CtrlMovies {
      * create new movies
      * @param body
      */
-    static async create(body: any): Promise<IMovie> {
-        return movies.create(body);
+    static async create(body: any) {
+        //checking if showTime has already expired or not
+        if(body.showTime>Time.current())
+        {
+            await movies.create(body);
+            return { success: true, message: "movie created successfully" };
+        }
+        else throw new Error("showTime has already passed");
     }
 
     /**
@@ -21,59 +27,75 @@ export default class CtrlMovies {
      * @param order - execute in order
      * 
      */
-    static async findAll(page: number, limit: number, filterBy: string, order:string): Promise<IMovie[]> {
+    static async findAll(page: number, limit: number, filterBy: string, order: string): Promise<IMovie[]> {
 
-        let ord;
-        ord = (order.toLowerCase() == "dsc") ? -1 : 1;
-        if(filterBy.toLowerCase() == "showtime"){
-        return movies
-            .aggregate([
-               {
-                    $match: {
-                        $expr: { $gt: ["$showTime", Time.current()] }
-                    }
-                   
-               },
-                {
-                    $skip: page * limit,
-                },
-                {
-                    $limit: limit,
-                },
-                {
-                  $sort: {
-                      showTime: ord,
-                  }
-                },
-            ])
+        //setting order value depending on user preference
+        const ord = (order.toLowerCase() == "dsc") ? -1 : 1;
 
-          .exec()
-        }
-          else{
+        //using filterBy to sort based on user reference
+        if (filterBy.toLowerCase() == "showtime") {
             return movies
-            .aggregate([
-                {
-                    $match: {
-                        $expr: { $gt: ["$showTime", Time.current()] }
-                    }
-                   
-                },
-                {
-                    $skip: page * limit,
-                },
-                {
-                    $limit: limit,
-                },
-                {
-                  $sort: {
-                      movieName: ord,
-                  }
-                },
-            ])
+                .aggregate([
+                    {
+                        //matching to check if showTime is already expired
+                        $match: {
+                            $expr: { $gt: ["$showTime", Time.current()] }
+                        }
 
-          .exec()
-          }
+                    },
+                    {
+                        $skip: page * limit,
+                    },
+                    {
+                        $limit: limit,
+                    },
+                    {
+                        $project:{
+                            "__v": 0
+                        }
+                    },
+                    {
+                        //sorting on the basis of showTime
+                        $sort: {
+                            showTime: ord,
+                        }
+                    },
+                ])
+
+                .exec()
+        }
+        else {
+            return movies
+                .aggregate([
+                    {
+                        //matching to check if showTime is already expired
+                        $match: {
+                            $expr: { $gt: ["$showTime", Time.current()] }
+                        }
+
+                    },
+                    {
+                        $skip: page * limit,
+                    },
+                    {
+                        $limit: limit,
+                    },
+                    {
+                        $project:{
+                            "__v": 0
+                        }
+                    },
+                    {
+                        //sorting on the basis of movieName
+                        $sort: {
+                            movieName: ord,
+                        }
+                    },
+                ])
+
+                .exec()
+        }
     }
 
-    
+
 }

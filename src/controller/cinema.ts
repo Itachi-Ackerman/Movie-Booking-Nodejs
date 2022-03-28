@@ -9,11 +9,16 @@ export default class CtrlCinemas {
      * create new movies
      * @param body
      */
-    static async create(body: ICinema): Promise<ICinema> {
+    static async create(body: ICinema) {
+
+        //accessing specific movie object based on given movieId
         const movie = await movies.findOne({ "_id": body.movieId })
-        
-        if (movie)
-            return cinemas.create(body);
+
+        //if movie exists success, else movie not in database
+        if (movie) {
+            await cinemas.create(body);
+            return { success: true, message: "Cinema created successfully" };
+        }
         else
             throw new Error("Movie does not exist in the database");
     }
@@ -24,7 +29,7 @@ export default class CtrlCinemas {
      * @param limit - no of documents to be returned per page
      */
     static async findAll(page: number, limit: number): Promise<ICinema[]> {
-
+        //skipping and limiting list before displaying all objects
         return cinemas
             .aggregate([
                 {
@@ -39,10 +44,18 @@ export default class CtrlCinemas {
                     }
                 },
                 {
+                    //looking up using movieId as reference from the movie collection
                     $lookup: {
                         from: "movies",
                         localField: "movieId",
                         foreignField: "_id",
+                        pipeline: [
+                            {
+                                $project: {
+                                    "__v": 0
+                                }
+                            }
+                        ],
                         as: "movie"
                     }
                 }
@@ -60,19 +73,24 @@ export default class CtrlCinemas {
      */
     static async findByMovieName(page: number, limit: number, movie: string) {
 
+        //accessing all movie objects with the same name as given by the movie parameter
         const movies1 = await movies.find({ "movieName": movie });
+
+        //initializing an empty array and then extracting all movie Ids from movies1 to store them in the array
         let moviesId = []
         movies1.forEach(element => {
             moviesId.push(element._id)
         });
 
+        //skipping and limiting before displaying full list
         return cinemas
             .aggregate([
                 {
+                    //matching movieId of cinema objects with movieIds in the created array: movies1
                     $match: {
                         "movieId": {
                             $in: moviesId,
-                        } ,
+                        },
                     }
                 },
                 {
@@ -87,6 +105,7 @@ export default class CtrlCinemas {
                     }
                 },
                 {
+                    //looking up from movie collection using movieId as reference
                     $lookup: {
                         from: "movies",
                         let: { mid: "$movieId" },
@@ -100,15 +119,22 @@ export default class CtrlCinemas {
                                         $eq: ["$movieName", movie]
                                     }
                                 }
+                            },
+                            {
+                                $project: {
+                                    "__v":0
+                                }
                             }
                         ],
                         as: "movie"
                     }
                 },
+                //ignoring unneccesary fields before displaying
                 {
-                    $project:{
-                        "movieId":0
-                    } 
+                    $project: {
+                        "movieId": 0,
+                        "__v":0
+                    }
                 }
             ])
             .exec()
