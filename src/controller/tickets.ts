@@ -1,5 +1,6 @@
-import cinemas from "../models/cinemas";
-import movies from "../models/movies";
+import cinemas, { ICinema } from "../models/cinemas";
+import movies, { IMovie } from "../models/movies";
+import Time from "../utils/Time";
 // import movies from "../models/movies";
 // import users from "../models/users";
 import tickets, { ITickets } from "../models/tickets";
@@ -11,13 +12,17 @@ export default class CtrlTickets {
      * @param body
      */
     static async bookTicket(userId: string, cinemaName1: string, numberOfSeats1: number): Promise<ITickets> {
-        const cinema = await cinemas.findOne({ "cinemaName": cinemaName1 });
+        const cinema : ICinema = await cinemas.findOne({ "cinemaName": cinemaName1 }).populate("movieId","_id showTime") as ICinema;
         if (cinema) {
+            const movie = cinema.movieId as IMovie;
+            const showTime1 = movie.showTime;
+            if(showTime1<Time.current())
+            {
+                throw new Error("Movie showTime expired")
+            }
             const seats = cinema.seatsAvailable;
             const cinemaId = cinema._id;
-            const movieId = cinema.movieId;
-            const movie = await movies.findOne({"_id": movieId});
-            const showTime1 = movie.showTime;
+            const movieId = movie._id;
             numberOfSeats1 = -1 * numberOfSeats1;
             if ((seats + numberOfSeats1) > -1) {
                 await cinemas.updateOne({ cinemaName: cinemaName1 }, { $inc: { seatsAvailable: numberOfSeats1 } });

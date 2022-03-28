@@ -122,7 +122,7 @@
                             },
                             {
                                 $lookup: {
-                                    from: "user",
+                                    from: "users",
                                     localField: "user",
                                     foreignField: "_id",
                                     pipeline: [
@@ -132,7 +132,7 @@
                                             } 
                                         }
                                     ],
-                                    as: "users"
+                                    as: "user"
                                 },
                             },
                         ],
