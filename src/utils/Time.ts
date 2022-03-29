@@ -8,9 +8,4 @@
         return moment().format(this.format);
      }
 
-     static isAfterCurrent(date: string){
-        console.log(date);
-        
-        return date > Time.current();
-     }
  }

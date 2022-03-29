@@ -1,7 +1,6 @@
 /**
  * @info schema for user
  */
-//import  Time  from "../utils/Time";
 import { Schema, model } from "mongoose";
  
 export interface IMovie {

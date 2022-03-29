@@ -20,7 +20,7 @@ export default class CtrlMovies {
     }
 
     /**
-     * find all books that belong to a user
+     * find all movies 
      * @param page - the page number (starting from 0)
      * @param limit - no of documents to be returned per page
      * @param filterBy - field can be filtered by
