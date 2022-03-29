@@ -32,7 +32,7 @@ export default class CtrlTickets {
             const cinemaId = cinema._id;
             const movieId = movie._id;
             //checking if seatsAvailable>=0 even after subtracting required seats
-            if ((seats + numberOfSeats1) > -1) {
+            if ((seats - numberOfSeats1) > -1) {
                 //decrementing seatsAvailable in database
                 await cinemas.updateOne({ cinemaName: cinemaName1 }, { $inc: { seatsAvailable: -numberOfSeats1 } });
                 await tickets.create({
